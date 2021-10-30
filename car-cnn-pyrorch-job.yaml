@@ -16,8 +16,8 @@ spec:
               imagePullPolicy: Always
               command:
                 - "python3"
-                - "/opt/stock-rnn-prediction/stock-rnn-prediction.py"
-                - "--epochs=400"
+                - "/opt/car-cnn-classification/car-cnn.py"
+                - "--epochs=20"
               resources:
                 limits:
                   nvidia.com/gpu: 1
@@ -32,8 +32,8 @@ spec:
               imagePullPolicy: Always
               command:
                 - "python3"
-                - "/opt/stock-rnn-prediction/stock-rnn-prediction.py"
-                - "--epochs=400"
+                - "/opt/car-cnn-classification/car-cnn.py"
+                - "--epochs=20"
               resources:
                 limits:
                   nvidia.com/gpu: 1
