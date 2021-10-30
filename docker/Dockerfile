@@ -1,7 +1,7 @@
 FROM pytorch/pytorch:1.10.0-cuda11.3-cudnn8-runtime
 
-RUN apt-get update \
-    apt-get install unzip
+RUN apt-get update
+RUN apt-get install unzip
 
 COPY ./car-cnn.py /opt/car-cnn-classification/
 COPY ./requirements.txt /opt/car-cnn-classification/
