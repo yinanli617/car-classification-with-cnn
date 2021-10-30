@@ -1,6 +1,6 @@
 FROM pytorch/pytorch:1.10.0-cuda11.3-cudnn8-runtime
 
-COPY ../car-cnn.py /opt/car-cnn-classification/
+COPY ./car-cnn.py /opt/car-cnn-classification/
 COPY ./requirements.txt /opt/car-cnn-classification/
 
 RUN pip3 install -r /opt/car-cnn-classification/requirements.txt
