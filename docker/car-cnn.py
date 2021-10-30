@@ -16,7 +16,7 @@ import argparse
 
 WORLD_SIZE = int(os.environ.get("WORLD_SIZE", 1))
 MODEL_NAME = 'efficientnet_b3'
-DATASET_DIR = './stanford_car_dataset/car_data/car_data/'
+DATASET_DIR = './car_data/car_data/'
 NUM_CAR_CLASSES = 196
 
 
