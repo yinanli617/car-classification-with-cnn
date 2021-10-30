@@ -2,4 +2,4 @@ numpy==1.20.3
 matplotlib==3.4.3
 tqdm==4.62.3
 gdown==4.2.0
-timm==0.4.121
+timm==0.4.12
