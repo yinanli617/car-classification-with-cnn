@@ -135,14 +135,6 @@ def eval_model(model, device, test_dl, loss_fn):
     return test_loss, test_acc
 
 
-def should_distribute():
-    return dist.is_available() and WORLD_SIZE > 1
-
-
-def is_distributed():
-    return dist.is_available() and dist.is_initialized()
-
-
 def main():
     # Training settings
     parser = argparse.ArgumentParser(description="Car classification with CNN and transfer learning")
@@ -163,10 +155,6 @@ def main():
     parser.add_argument("--save-model", action="store_true", default=False,
                         help="For Saving the current Model")
 
-    if dist.is_available():
-        parser.add_argument("--backend", type=str, help="Distributed backend",
-                            choices=[dist.Backend.GLOO, dist.Backend.NCCL, dist.Backend.MPI],
-                            default=dist.Backend.GLOO)
     args = parser.parse_args()
 
     use_cuda = not args.no_cuda and torch.cuda.is_available()
@@ -176,10 +164,6 @@ def main():
     torch.manual_seed(args.seed)
 
     device = torch.device("cuda" if use_cuda else "cpu")
-
-    if should_distribute():
-        print("Using distributed PyTorch with {} backend".format(args.backend))
-        dist.init_process_group(backend=args.backend)
 
     # Use this format (%Y-%m-%dT%H:%M:%SZ) to record timestamp of the metrics.
     # If log_path is empty print log to StdOut, otherwise print log to the file.
