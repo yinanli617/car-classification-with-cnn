@@ -34,6 +34,6 @@ spec:
                 - "python3"
                 - "/opt/car-cnn-classification/car-cnn.py"
                 - "--epochs=20"
-              resources:
-                limits:
-                  nvidia.com/gpu: 1
+#              resources:
+#                limits:
+#                  nvidia.com/gpu: 1
