@@ -15,7 +15,6 @@ import logging
 import argparse
 
 WORLD_SIZE = int(os.environ.get("WORLD_SIZE", 1))
-DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 MODEL_NAME = 'efficientnet_b3'
 DATASET_DIR = './stanford_car_dataset/car_data/car_data/'
 NUM_CAR_CLASSES = 196
@@ -51,7 +50,7 @@ def get_dataloaders(dataset_dir, batch_size, num_workers):
     return train_dl, test_dl
 
 
-def train_model(model, train_dl, test_dl, loss_fn, optimizer, scheduler, save_model, n_epochs=5):
+def train_model(model, device, train_dl, test_dl, loss_fn, optimizer, scheduler, save_model, n_epochs=5):
     losses = []
     accuracies = []
     test_losses = []
@@ -66,8 +65,8 @@ def train_model(model, train_dl, test_dl, loss_fn, optimizer, scheduler, save_mo
         for i, data in enumerate(train_dl, 0):
             # get the inputs and assign them to cuda
             inputs, labels = data
-            inputs = inputs.to(DEVICE)
-            labels = labels.to(DEVICE)
+            inputs = inputs.to(device)
+            labels = labels.to(device)
 
             optimizer.zero_grad()
 
@@ -94,7 +93,7 @@ def train_model(model, train_dl, test_dl, loss_fn, optimizer, scheduler, save_mo
 
         # switch the model to eval mode to evaluate on test data
         model.eval()
-        test_loss, test_acc = eval_model(model, test_dl, loss_fn)
+        test_loss, test_acc = eval_model(model, device, test_dl, loss_fn)
         test_losses.append(test_loss)
         test_accuracies.append(test_acc)
 
@@ -109,15 +108,15 @@ def train_model(model, train_dl, test_dl, loss_fn, optimizer, scheduler, save_mo
     return model, losses, accuracies, test_losses, test_accuracies
 
 
-def eval_model(model, test_dl, loss_fn):
+def eval_model(model, device, test_dl, loss_fn):
     correct = 0.0
     total = 0.0
     loss_total = 0.0
     with torch.no_grad():
         for i, data in enumerate(test_dl, 0):
             images, labels = data
-            images = images.to(DEVICE)
-            labels = labels.to(DEVICE)
+            images = images.to(device)
+            labels = labels.to(device)
 
             outputs = model(images)
             loss = loss_fn(outputs, labels)
@@ -157,6 +156,8 @@ def main():
                         help="learning rate (default: 0.001)")
     parser.add_argument("--no-cuda", action="store_true", default=False,
                         help="disables CUDA training")
+    parser.add_argument("--seed", type=int, default=42, metavar="S",
+                        help="random seed (default: 42)")
     parser.add_argument("--log-path", type=str, default="",
                         help="Path to save logs. Print to StdOut if log-path is not set")
     parser.add_argument("--save-model", action="store_true", default=False,
@@ -167,6 +168,18 @@ def main():
                             choices=[dist.Backend.GLOO, dist.Backend.NCCL, dist.Backend.MPI],
                             default=dist.Backend.GLOO)
     args = parser.parse_args()
+
+    use_cuda = not args.no_cuda and torch.cuda.is_available()
+    if use_cuda:
+        print("Using CUDA")
+
+    torch.manual_seed(args.seed)
+
+    device = torch.device("cuda" if use_cuda else "cpu")
+
+    if should_distribute():
+        print("Using distributed PyTorch with {} backend".format(args.backend))
+        dist.init_process_group(backend=args.backend)
 
     # Use this format (%Y-%m-%dT%H:%M:%SZ) to record timestamp of the metrics.
     # If log_path is empty print log to StdOut, otherwise print log to the file.
@@ -191,7 +204,7 @@ def main():
     # replace the last fc layer with an untrained one (requires grad by default)
     num_ftrs = model_ft.classifier.in_features
     model_ft.classifier = nn.Linear(num_ftrs, NUM_CAR_CLASSES)
-    model_ft.to(DEVICE)
+    model_ft.to(device)
 
     loss_fn = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model_ft.parameters(), lr=args.lr)
@@ -205,6 +218,7 @@ def main():
                                                        )
 
     model_ft, training_losses, training_accs, test_losses, test_accs = train_model(model_ft,
+                                                                                   device,
                                                                                    train_dl,
                                                                                    test_dl,
                                                                                    loss_fn,
